@@ -1,0 +1,55 @@
+name: Update analects data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '논어_명언_300.xlsx'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-analects-data
+  cancel-in-progress: true
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: build/package-lock.json
+
+      - name: Install dependencies
+        working-directory: build
+        run: npm ci
+
+      - name: Generate data.js from Excel
+        working-directory: build
+        run: node parse-xlsx.mjs "../논어_명언_300.xlsx"
+
+      # 새 글자가 생기면 획순 데이터도 다시 만듭니다.
+      # (GitHub에는 천자문 앱 폴더가 없으므로 공개 데이터 + 조합 규칙으로 생성)
+      - name: Regenerate stroke-data.js
+        working-directory: build
+        run: node make-stroke-data.mjs
+
+      - name: Commit updated data
+        run: |
+          if git diff --quiet -- data.js stroke-data.js; then
+            echo "data changed: no"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.js stroke-data.js
+          git commit -m "chore: 논어 엑셀 내용 반영 [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

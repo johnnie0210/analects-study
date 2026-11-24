@@ -1,0 +1,14 @@
+{
+  "name": "analects-study-build",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "논어_명언_300.xlsx → data.js / stroke-data.js 변환 스크립트",
+  "scripts": {
+    "build": "node parse-xlsx.mjs",
+    "stroke": "node make-stroke-data.mjs"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
